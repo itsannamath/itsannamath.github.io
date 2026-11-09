@@ -17,7 +17,7 @@ const allIds = new Set();
 const data = decks.map(sec => ({ ...sec, decks: sec.decks.filter(d => !d.draft || process.env.DRAFTS) }))
   .filter(sec => sec.decks.length)
   .map(sec => ({
-  id: sec.id, title: sec.title, sub: sec.sub || '',
+  id: sec.id, title: sec.title, sub: sec.sub || '', related: sec.related || [],
   decks: sec.decks.map(d => ({
     id: d.id, title: d.title, sub: d.sub || '',
     cards: d.cards.map(([q, a]) => {

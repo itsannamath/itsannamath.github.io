@@ -110,6 +110,7 @@ function home() {
 function sectionPage(sec) {
   const l = secIds(sec), d = due(l), w = weak(l), fresh = l.filter(id => status(id) === 'new');
   const back = '#sec-' + sec.id;
+  const rel = (sec.related || []).map(id => DECKS.find(d => d.id === id)).filter(Boolean);
   setView(`
     <div class="top"><button class="back" data-act="home" aria-label="Назад">←</button><h2>${esc(sec.title)}</h2></div>
     <div class="stats">
@@ -127,7 +128,9 @@ function sectionPage(sec) {
       return `<button class="deck" data-deck="${dk.id}"><div class="t"><b>${esc(dk.title)}</b><span class="go">→</span></div>
         <small>${esc(dk.sub)}${dk.sub ? ' · ' : ''}вивчено ${ok} з ${dl.length}</small>${progBar(dl)}</button>`;
     }).join('')}
-    ${legend}`);
+    ${legend}
+    ${rel.length ? `<div class="h2">Знадобиться з попередніх модулів</div>
+      <div class="rel">${rel.map(dk => `<button class="chip" data-deck="${dk.id}"><b>${esc(dk.title)} →</b><small>${esc(dk.section.title)} · вивчено ${count(ids(dk), 'ok')} з ${dk.cards.length}</small></button>`).join('')}</div>` : ''}`);
   $('[data-act=home]').onclick = () => { location.hash = ''; };
   $('[data-act=all]').onclick = () => study(shuffle(l.slice()), sec.title, back);
   if (w.length) $('[data-act=weak]').onclick = () => study(shuffle(w), sec.title + ' · не знаю', back);

@@ -67,6 +67,8 @@ h1{ font-size:32px; font-weight:800; text-transform:uppercase; margin:6px 0 4px;
 .l-ok::before{ background:var(--accent); } .l-mid::before{ background:var(--pink); } .l-bad::before{ background:#F7C3D7; } .l-new::before{ background:var(--soft); border:1px solid var(--pink); }
 
 /* тема */
+.rel{ display:grid; gap:10px; }
+.rel .chip{ width:100%; }
 .top{ display:flex; align-items:center; gap:12px; margin-bottom:16px; }
 .back{ background:var(--soft); color:var(--accent); width:40px; height:40px; border-radius:50%; font-size:18px; font-weight:800; flex:none; }
 .top h2{ font-size:18px; font-weight:800; text-transform:uppercase; flex:1; line-height:1.15; }
