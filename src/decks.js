@@ -7,7 +7,7 @@ const note = (f, t) => '\\begin{gathered}' + f + '\\\\[2pt] \\small\\text{' + t 
 
 module.exports = [
   {
-    id: 'mod1', title: 'Модуль 1', sub: 'формули скороченого множення',
+    id: 'mod1', title: 'Модуль 1 · База математики', sub: 'формули скороченого множення',
     decks: [
       {
         id: 'fsm', title: 'Формули скороченого множення', sub: 'ФСМ',
