@@ -1,0 +1,275 @@
+(() => {
+'use strict';
+const DECKS = window.DECKS || [];
+const CARDS = {};                       // id → {id, q, a, deck}
+DECKS.forEach(d => d.cards.forEach(c => { CARDS[c.id] = Object.assign({ deck: d }, c); }));
+
+/* ---------- прогрес (зберігається в браузері) ---------- */
+const KEY = 'annamath-cards-v1';
+// інтервали повторення в днях для кожної «скриньки» 0..5
+const INT = [1, 1, 3, 7, 14, 30];
+let P = {};
+try { P = JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { P = {}; }
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(P)); } catch (e) {} };
+const today = () => { const t = new Date(); return Math.floor((t - t.getTimezoneOffset() * 6e4) / 864e5); };
+
+// статус: new — ще не бачив; bad — не знав минулого разу; mid — вчу; ok — вивчено
+const status = id => { const r = P[id]; if (!r) return 'new'; return r.b === 0 ? 'bad' : r.b === 1 ? 'mid' : 'ok'; };
+const isDue = id => P[id] && P[id].d <= today();
+function grade(id, knew) {
+  const r = P[id], t = today();
+  let b;
+  if (knew) b = r ? Math.min(r.b + 1, 5) : 2;   // нову картку, яку знаєш одразу, вважаємо вивченою
+  else b = 0;
+  P[id] = { b, d: t + INT[b], s: (r ? r.s : 0) + 1 };
+  save();
+}
+const ids = deck => (deck ? deck.cards : Object.values(CARDS)).map(c => c.id);
+const count = (list, st) => list.filter(id => status(id) === st).length;
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const weak = list => list.filter(id => { const s = status(id); return s === 'bad' || s === 'mid'; });
+const due = list => list.filter(isDue);
+const plural = (n, one, few, many) => {
+  const m10 = n % 10, m100 = n % 100;
+  return n + ' ' + (m10 === 1 && m100 !== 11 ? one : m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14) ? few : many);
+};
+const cardsW = n => plural(n, 'картка', 'картки', 'карток');
+
+/* ---------- допоміжне ---------- */
+const app = document.getElementById('app');
+const $ = s => app.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function progBar(list) {
+  const n = list.length || 1, pc = st => (count(list, st) / n * 100) + '%';
+  return `<div class="prog"><i class="p-ok" style="width:${pc('ok')}"></i><i class="p-mid" style="width:${pc('mid')}"></i><i class="p-bad" style="width:${pc('bad')}"></i></div>`;
+}
+const legend = '<div class="legend"><span class="l-ok">вивчено</span><span class="l-mid">вчу</span><span class="l-bad">не знаю</span><span class="l-new">нові</span></div>';
+let keyHandler = null;
+function setView(html, keys) { keyHandler = keys || null; app.innerHTML = html; window.scrollTo(0, 0); }
+
+/* ---------- головна ---------- */
+function home() {
+  const all = ids(), d = due(all), w = weak(all);
+  const learned = count(all, 'ok');
+  setView(`
+    <div class="brand">@its.annamath · НМТ з математики</div>
+    <h1>Картки<br>з формулами</h1>
+    <div class="sub">Згадай відповідь → торкнись картки → чесно познач, чи знаєш. Картки, яких не знаєш, повертатимуться частіше.</div>
+
+    ${d.length
+      ? `<button class="today" data-act="due"><div class="n">${d.length}</div><b>Повторити сьогодні</b><small>${cardsW(d.length)} чекають на повторення</small></button>`
+      : `<button class="today empty" data-act="mix"><div class="n">✓</div><b>На сьогодні повторень немає</b><small>${learned ? 'Можна вчити нові картки або пройти все впереміш' : 'Обери тему нижче й почни'}</small></button>`}
+    <div class="row2">
+      <button class="chip" data-act="weak" ${w.length ? '' : 'disabled'}><b>Що не знаю</b><small>${w.length ? cardsW(w.length) + ' з усіх тем' : 'поки таких немає'}</small></button>
+      <button class="chip" data-act="mix"><b>Усе впереміш</b><small>як на НМТ · ${cardsW(all.length)}</small></button>
+    </div>
+
+    <div class="h2">Теми</div>
+    ${DECKS.map(dk => {
+      const l = ids(dk), ok = count(l, 'ok');
+      return `<button class="deck" data-deck="${dk.id}"><div class="t"><b>${esc(dk.title)}</b><span class="go">→</span></div>
+        <small>${esc(dk.sub)}${dk.sub ? ' · ' : ''}вивчено ${ok} з ${l.length}</small>${progBar(l)}</button>`;
+    }).join('')}
+    ${legend}
+
+    <div class="foot">
+      <button data-act="transfer">Перенести прогрес</button>
+      <button data-act="install">Додати на екран телефона</button>
+      <span class="sp"></span>
+      <a href="https://www.instagram.com/its.annamath/" target="_blank" rel="noopener">@its.annamath</a>
+    </div>`);
+  app.querySelectorAll('[data-deck]').forEach(b => b.onclick = () => { location.hash = 'deck-' + b.dataset.deck; });
+  app.querySelectorAll('[data-act]').forEach(b => b.onclick = () => {
+    const a = b.dataset.act;
+    if (a === 'due') study(shuffle(due(ids())), 'Повторення', '');
+    if (a === 'weak') study(shuffle(weak(ids())), 'Що не знаю', '');
+    if (a === 'mix') study(shuffle(ids()), 'Усе впереміш', '');
+    if (a === 'transfer') transfer();
+    if (a === 'install') install();
+  });
+}
+
+/* ---------- сторінка теми ---------- */
+function deckPage(dk) {
+  const l = ids(dk), d = due(l), w = weak(l), fresh = l.filter(id => status(id) === 'new');
+  const learnSet = d.concat(fresh.slice(0, 15));
+  const back = '#deck-' + dk.id;
+  setView(`
+    <div class="top"><button class="back" data-act="home" aria-label="Назад">←</button><h2>${esc(dk.title)}</h2></div>
+    <div class="stats">
+      <div class="stat"><b>${count(l, 'ok')}</b><small>вивчено</small></div>
+      <div class="stat"><b>${count(l, 'mid')}</b><small>вчу</small></div>
+      <div class="stat"><b>${count(l, 'bad')}</b><small>не знаю</small></div>
+      <div class="stat"><b>${fresh.length}</b><small>нові</small></div>
+    </div>
+    <button class="btn main" data-act="learn" ${learnSet.length ? '' : 'disabled'}>${learnSet.length
+      ? `Вчити · ${cardsW(learnSet.length)}` : 'Усе повторено на сьогодні ✓'}</button>
+    <button class="btn line" data-act="weak" ${w.length ? '' : 'disabled'}>Повторити, що не знаю${w.length ? ' · ' + w.length : ''}</button>
+    <button class="btn line" data-act="all">Пройти всю тему · ${l.length}</button>
+    <div class="h2">Усі картки теми</div>
+    <div class="list">${dk.cards.map(c => {
+      const st = status(c.id);
+      const col = { ok: 'var(--accent)', mid: 'var(--pink)', bad: '#F7C3D7', new: 'var(--soft)' }[st];
+      return `<div class="li"><span class="dot" style="background:${col};${st === 'new' ? 'border:1px solid var(--pink)' : ''}"></span>${c.q}</div>`;
+    }).join('')}</div>
+    ${legend}`);
+  $('[data-act=home]').onclick = () => { location.hash = ''; };
+  const b = $('[data-act=learn]'); if (learnSet.length) b.onclick = () => study(shuffle(d).concat(shuffle(fresh.slice(0, 15))), dk.title, back);
+  if (w.length) $('[data-act=weak]').onclick = () => study(shuffle(w), dk.title + ' · не знаю', back);
+  $('[data-act=all]').onclick = () => study(shuffle(l.slice()), dk.title, back);
+}
+
+/* ---------- навчання ---------- */
+function study(list, title, backHash) {
+  if (!list.length) return;
+  const total = list.length, queue = list.slice(), answered = new Set(), wrong = new Set();
+  let cleared = 0, flipped = false, cur = null;
+  setView(`
+    <div class="top"><button class="back" data-act="back" aria-label="Назад">←</button><h2>${esc(title)}</h2><span class="cnt" id="cnt"></span></div>
+    <div class="bar"><i id="bar"></i></div>
+    <div class="scene"><div class="card" id="card">
+      <div class="face front"><div class="lbl"><span>Згадай</span><span id="dk1"></span></div><div id="q"></div><span class="hint">торкнись, щоб перевірити</span></div>
+      <div class="face backf"><div class="lbl"><span>Відповідь</span><span id="dk2"></span></div><div id="a"></div></div>
+    </div></div>
+    <div class="ans"><button class="no" id="no" disabled>Ще не знаю</button><button class="yes" id="yes" disabled>Знаю ✓</button></div>
+    <div class="keys">Пробіл — перевернути · ← не знаю · → знаю</div>`, onKey);
+  const card = $('#card');
+  $('[data-act=back]').onclick = leave;
+
+  function show() {
+    if (!queue.length) return finish();
+    cur = CARDS[queue[0]];
+    const put = () => {
+      $('#q').innerHTML = cur.q; $('#a').innerHTML = cur.a;
+      $('#dk1').textContent = $('#dk2').textContent = cur.deck.title;
+    };
+    if (flipped) {                      // перевертаємо назад без «підглядання» нової відповіді
+      card.classList.add('noanim'); card.classList.remove('flip'); void card.offsetWidth; card.classList.remove('noanim');
+    }
+    flipped = false; put();
+    $('#no').disabled = $('#yes').disabled = true;
+    $('#cnt').textContent = cleared + ' / ' + total;
+    $('#bar').style.width = (cleared / total * 100) + '%';
+  }
+  function flip() {
+    flipped = !flipped; card.classList.toggle('flip', flipped);
+    if (flipped) $('#no').disabled = $('#yes').disabled = false;
+  }
+  function answer(knew) {
+    if ($('#yes').disabled) return;
+    const id = queue.shift();
+    if (!answered.has(id)) { answered.add(id); grade(id, knew); }   // у прогрес іде лише перша відповідь
+    if (knew) cleared++;
+    else { wrong.add(id); queue.splice(Math.min(2, queue.length), 0, id); }  // повернеться через 2 картки
+    show();
+  }
+  function onKey(e) {
+    if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); flip(); }
+    else if (e.key === 'ArrowLeft') answer(false);
+    else if (e.key === 'ArrowRight') answer(true);
+    else if (e.key === 'Escape') leave();
+  }
+  function leave() { if (backHash && location.hash !== backHash) location.hash = backHash; else route(); }
+  function finish() {
+    const first = total - wrong.size;
+    setView(`
+      <div class="top"><button class="back" data-act="back" aria-label="Назад">←</button><h2>${esc(title)}</h2></div>
+      <div class="done">
+        <div class="big">${first} / ${total}</div>
+        <p>${first === total ? 'Усе з першого разу! 🔥' : 'з першого разу.<br>Картки з помилками система покаже тобі ще й завтра.'}</p>
+        ${wrong.size ? `<button class="btn main" data-act="again">Ще раз — тільки помилки · ${wrong.size}</button>` : ''}
+        <button class="btn ${wrong.size ? 'line' : 'main'}" data-act="back2">Готово</button>
+      </div>`);
+    $('[data-act=back]').onclick = $('[data-act=back2]').onclick = leave;
+    if (wrong.size) $('[data-act=again]').onclick = () => study(shuffle([...wrong]), title, backHash);
+  }
+  card.onclick = flip;
+  $('#no').onclick = () => answer(false);
+  $('#yes').onclick = () => answer(true);
+  show();
+}
+document.addEventListener('keydown', e => {
+  if (!document.getElementById('modal').classList.contains('hidden')) { if (e.key === 'Escape') closeModal(); return; }
+  if (keyHandler) keyHandler(e);
+});
+
+/* ---------- вікна ---------- */
+const modal = document.getElementById('modal'), sheet = document.getElementById('sheet');
+function openModal(html) { sheet.innerHTML = html; modal.classList.remove('hidden'); }
+function closeModal() { modal.classList.add('hidden'); }
+modal.onclick = e => { if (e.target === modal) closeModal(); };
+
+function transfer() {
+  const code = 'AM1:' + btoa(unescape(encodeURIComponent(JSON.stringify(P))));
+  openModal(`
+    <h3>Перенести прогрес</h3>
+    <p>Прогрес зберігається на цьому пристрої. Щоб продовжити на іншому — скопіюй код тут і встав його там у поле нижче.</p>
+    <textarea id="code" readonly>${code}</textarea>
+    <button class="btn main" id="copy">Скопіювати код</button>
+    <div class="h2" style="margin-top:18px">Вставити код з іншого пристрою</div>
+    <textarea id="paste" placeholder="AM1:…"></textarea>
+    <div class="msg" id="msg"></div>
+    <button class="btn line" id="load">Завантажити прогрес</button>
+    <button class="btn line" id="reset" style="border-color:var(--soft);color:var(--muted)">Почати з нуля</button>
+    <button class="btn" id="close" style="color:var(--muted)">Закрити</button>`);
+  const msg = t => { sheet.querySelector('#msg').textContent = t; };
+  sheet.querySelector('#copy').onclick = () => {
+    const ta = sheet.querySelector('#code');
+    const ok = () => { sheet.querySelector('#copy').textContent = 'Скопійовано ✓'; };
+    try { navigator.clipboard.writeText(ta.value).then(ok, () => { ta.select(); document.execCommand('copy'); ok(); }); }
+    catch (e) { ta.select(); document.execCommand('copy'); ok(); }
+  };
+  sheet.querySelector('#load').onclick = () => {
+    const v = sheet.querySelector('#paste').value.trim();
+    try {
+      if (!v.startsWith('AM1:')) throw 0;
+      const inc = JSON.parse(decodeURIComponent(escape(atob(v.slice(4)))));
+      let n = 0;
+      for (const k in inc) {            // беремо той запис, де картку повторювали більше разів
+        const r = inc[k];
+        if (!r || typeof r.b !== 'number' || typeof r.d !== 'number') continue;
+        if (!P[k] || (r.s || 0) > (P[k].s || 0)) { P[k] = r; n++; }
+      }
+      save(); msg('Готово! Оновлено ' + cardsW(n) + '.');
+      setTimeout(() => { closeModal(); route(); }, 900);
+    } catch (e) { msg('Код не підходить. Скопіюй його ще раз повністю.'); }
+  };
+  let sure = false;
+  sheet.querySelector('#reset').onclick = e => {
+    if (!sure) { sure = true; e.target.textContent = 'Точно? Натисни ще раз'; e.target.style.color = 'var(--accent)'; return; }
+    P = {}; save(); closeModal(); route();
+  };
+  sheet.querySelector('#close').onclick = closeModal;
+}
+
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredPrompt = e; });
+function install() {
+  openModal(`
+    <h3>Картки на екрані телефона</h3>
+    <p>Сайт відкриватиметься як застосунок — з іконкою, на весь екран і навіть без інтернету.</p>
+    ${deferredPrompt ? '<button class="btn main" id="inst">Встановити зараз</button>' : ''}
+    <div class="h2">iPhone / iPad</div>
+    <ol><li>Відкрий сайт у <b>Safari</b></li><li>Натисни «Поділитися» <b>⬆︎</b></li><li>Обери <b>«На початковий екран»</b></li></ol>
+    <div class="h2">Android</div>
+    <ol><li>Відкрий сайт у <b>Chrome</b></li><li>Натисни меню <b>⋮</b></li><li>Обери <b>«Додати на головний екран»</b> або «Встановити застосунок»</li></ol>
+    <button class="btn line" id="close">Зрозуміло</button>`);
+  const b = sheet.querySelector('#inst');
+  if (b) b.onclick = () => { deferredPrompt.prompt(); deferredPrompt = null; closeModal(); };
+  sheet.querySelector('#close').onclick = closeModal;
+}
+
+/* ---------- маршрути ---------- */
+function route() {
+  closeModal();
+  const h = location.hash.slice(1);
+  const dk = h.startsWith('deck-') && DECKS.find(d => d.id === h.slice(5));
+  if (dk) deckPage(dk); else home();
+}
+window.addEventListener('hashchange', route);
+route();
+
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+})();
