@@ -53,5 +53,9 @@ const sw = fs.readFileSync(path.join(ROOT, 'src', 'sw.template.js'), 'utf8')
   .replace('__VERSION__', ver).replace('__FILES__', JSON.stringify(files));
 fs.writeFileSync(path.join(OUT, 'sw.js'), sw);
 
+// версія в адресах файлів — браузер не тримає стару копію після оновлення
+const html = path.join(OUT, 'index.html');
+fs.writeFileSync(html, fs.readFileSync(html, 'utf8').replace(/(href|src)="(style\.css|app\.js|data\.js|katex\/katex\.min\.css)"/g, `$1="$2?v=${ver}"`));
+
 const n = data.reduce((s, d) => s + d.cards.length, 0);
 console.log(`ok: ${data.length} колод, ${n} карток, версія ${ver}`);

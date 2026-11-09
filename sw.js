@@ -22,7 +22,7 @@ self.addEventListener('fetch', e => {
   }
   if (url.origin !== location.origin) return;
   // спершу мережа (щоб бачити нові картки), без мережі — кеш
-  e.respondWith(fetch(e.request).then(res => {
+  e.respondWith(fetch(e.request, { cache: 'no-cache' }).then(res => {
     const copy = res.clone(); caches.open(CACHE).then(c => c.put(e.request, copy)); return res;
   }).catch(() => caches.match(e.request, { ignoreSearch: true })));
 });
