@@ -20,6 +20,16 @@ h1{ font-size:32px; font-weight:800; text-transform:uppercase; margin:6px 0 4px;
 .sub{ color:var(--muted); font-size:14px; line-height:1.45; margin-bottom:22px; }
 .h2{ font-size:13px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:var(--accent); margin:26px 0 12px; }
 
+/* плашка «додай на екран» */
+.inst{ display:flex; align-items:center; gap:12px; background:var(--soft); border:2px solid var(--pink); border-radius:18px; padding:12px 10px 12px 12px; margin-bottom:14px; }
+.inst img{ width:44px; height:44px; border-radius:11px; flex:none; }
+.inst div{ flex:1; min-width:0; }
+.inst b{ display:block; font-size:14px; font-weight:800; line-height:1.25; }
+.inst small{ font-size:12px; color:var(--muted); }
+.inst-go{ background:var(--accent); color:#fff; font-weight:700; font-size:14px; border-radius:12px; padding:10px 14px; flex:none; }
+.inst-x{ color:var(--muted); font-size:22px; line-height:1; padding:4px 4px; flex:none; }
+.sheet ol li{ margin-bottom:6px; }
+
 /* головні кнопки */
 .today{ display:block; width:100%; text-align:left; background:var(--accent); color:#fff; border-radius:20px;
   padding:20px 22px; box-shadow:0 10px 26px rgba(226,69,126,.28); }

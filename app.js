@@ -56,6 +56,13 @@ function home() {
     <h1>Картки<br>з формулами</h1>
     <div class="sub">Згадай відповідь → торкнись картки → чесно познач, чи знаєш. Картки, яких не знаєш, повертатимуться частіше.</div>
 
+    ${showInstallBanner() ? `<div class="inst" id="instBanner">
+      <img src="icon-192.png" alt="">
+      <div><b>Додай картки на екран телефона</b><small>Відкриватимуться одним дотиком, як застосунок</small></div>
+      <button class="inst-go" data-act="install">Як?</button>
+      <button class="inst-x" data-act="hideInstall" aria-label="Сховати">×</button>
+    </div>` : ''}
+
     ${d.length
       ? `<button class="today" data-act="due"><div class="n">${d.length}</div><b>Повторити сьогодні</b><small>${cardsW(d.length)} чекають на повторення</small></button>`
       : `<button class="today empty" data-act="mix"><div class="n">✓</div><b>На сьогодні повторень немає</b><small>${learned ? 'Можна вчити нові картки або пройти все впереміш' : 'Обери тему нижче й почни'}</small></button>`}
@@ -74,7 +81,7 @@ function home() {
 
     <div class="foot">
       <button data-act="transfer">Перенести прогрес</button>
-      <button data-act="install">Додати на екран телефона</button>
+      ${IS_MOBILE && !IS_STANDALONE ? '<button data-act="install">Додати на екран телефона</button>' : ''}
       <span class="sp"></span>
       <a href="https://www.instagram.com/its.annamath/" target="_blank" rel="noopener">@its.annamath</a>
     </div>`);
@@ -86,6 +93,7 @@ function home() {
     if (a === 'mix') study(shuffle(ids()), 'Усе впереміш', '');
     if (a === 'transfer') transfer();
     if (a === 'install') install();
+    if (a === 'hideInstall') { try { localStorage.setItem(KEY_INST, '1'); } catch (e) {} home(); }
   });
 }
 
@@ -244,15 +252,36 @@ function transfer() {
 
 let deferredPrompt = null;
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredPrompt = e; });
+const UA = navigator.userAgent;
+const IS_IOS = /iPhone|iPad|iPod/i.test(UA) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const IS_ANDROID = /Android/i.test(UA);
+const IS_MOBILE = IS_IOS || IS_ANDROID;
+const IS_STANDALONE = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+const KEY_INST = 'annamath-install-hidden';
+function showInstallBanner() {
+  if (!IS_MOBILE || IS_STANDALONE) return false;
+  try { return !localStorage.getItem(KEY_INST); } catch (e) { return true; }
+}
+const IOS_STEPS = `<ol>
+  <li>Сайт має бути відкритий у <b>Safari</b> (не в Instagram чи Telegram — там натисни «Відкрити в Safari»)</li>
+  <li>Натисни кнопку <b>«Поділитися»</b> — квадрат зі стрілкою вгору <b>⬆︎</b>. Вона внизу екрана; якщо її не видно — спершу натисни <b>•••</b> внизу праворуч</li>
+  <li>Прокрути список трохи вниз і обери <b>«На початковий екран»</b></li>
+  <li>Натисни <b>«Додати»</b> вгорі праворуч</li></ol>`;
+const ANDROID_STEPS = `<ol>
+  <li>Сайт має бути відкритий у <b>Chrome</b> (не в Instagram чи Telegram — там обери «Відкрити в браузері»)</li>
+  <li>Натисни <b>⋮</b> — три крапки вгорі праворуч</li>
+  <li>Обери <b>«Додати на головний екран»</b> або <b>«Установити додаток»</b></li>
+  <li>Підтвердь — <b>«Додати»</b></li></ol>`;
 function install() {
+  let body;
+  if (deferredPrompt) body = '<button class="btn main" id="inst">Додати на екран</button>' + '<p>Або вручну:</p>' + ANDROID_STEPS;
+  else if (IS_IOS) body = IOS_STEPS;
+  else if (IS_ANDROID) body = ANDROID_STEPS;
+  else body = '<div class="h2">iPhone</div>' + IOS_STEPS + '<div class="h2">Android</div>' + ANDROID_STEPS;
   openModal(`
     <h3>Картки на екрані телефона</h3>
-    <p>Сайт відкриватиметься як застосунок — з іконкою, на весь екран і навіть без інтернету.</p>
-    ${deferredPrompt ? '<button class="btn main" id="inst">Встановити зараз</button>' : ''}
-    <div class="h2">iPhone / iPad</div>
-    <ol><li>Відкрий сайт у <b>Safari</b></li><li>Натисни «Поділитися» <b>⬆︎</b></li><li>Обери <b>«На початковий екран»</b></li></ol>
-    <div class="h2">Android</div>
-    <ol><li>Відкрий сайт у <b>Chrome</b></li><li>Натисни меню <b>⋮</b></li><li>Обери <b>«Додати на головний екран»</b> або «Встановити застосунок»</li></ol>
+    <p>З'явиться іконка «Картки НМТ», як у звичайного застосунку. Картки відкриватимуться на весь екран і працюватимуть навіть без інтернету.</p>
+    ${body}
     <button class="btn line" id="close">Зрозуміло</button>`);
   const b = sheet.querySelector('#inst');
   if (b) b.onclick = () => { deferredPrompt.prompt(); deferredPrompt = null; closeModal(); };
