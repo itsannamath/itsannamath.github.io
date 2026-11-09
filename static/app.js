@@ -55,7 +55,8 @@ function home() {
   const all = ids(), d = due(all), w = weak(all);
   const learned = count(all, 'ok');
   setView(`
-    <div class="brand">@its.annamath · НМТ з математики</div>
+    <div class="hdr"><div class="brand">@its.annamath · НМТ</div>
+      <button class="refresh" data-act="refresh" aria-label="Оновити" title="Оновити сайт">↻</button></div>
     <h1>Картки<br>з формулами</h1>
     <div class="sub">Згадай відповідь → торкнись картки → чесно познач, чи знаєш. Картки, яких не знаєш, повертатимуться частіше.</div>
 
@@ -100,6 +101,7 @@ function home() {
     if (a === 'mix') study(shuffle(ids()), 'Усе впереміш', '');
     if (a === 'transfer') transfer();
     if (a === 'install') install();
+    if (a === 'refresh') { b.classList.add('spin'); hardRefresh(); }
     if (a === 'hideInstall') { try { localStorage.setItem(KEY_INST, '1'); } catch (e) {} home(); }
   });
 }
@@ -344,7 +346,38 @@ function route() {
 window.addEventListener('hashchange', route);
 route();
 
-if ('serviceWorker' in navigator && location.protocol === 'https:') {
-  navigator.serviceWorker.register('sw.js').catch(() => {});
+/* ---------- оновлення сайту ---------- */
+// кнопка ↻: беремо найсвіжішу версію з інтернету, а не збережену копію
+async function hardRefresh() {
+  try {
+    const reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration();
+    if (reg) await reg.update();
+    if (window.caches) for (const k of await caches.keys()) await caches.delete(k);
+  } catch (e) {}
+  location.replace(location.pathname + '?r=' + Date.now() + location.hash);
 }
+function updateToast() {
+  if (document.getElementById('toast')) return;
+  const t = document.createElement('button');
+  t.id = 'toast'; t.className = 'toast';
+  t.innerHTML = '<b>Є нова версія</b> · натисни, щоб оновити ↻';
+  t.onclick = () => location.reload();
+  document.body.appendChild(t);
+}
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  const hadController = !!navigator.serviceWorker.controller;
+  let reloaded = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadController || reloaded) return;          // перше встановлення — нічого не робимо
+    if (document.getElementById('card')) updateToast();  // посеред навчання не перериваємо
+    else { reloaded = true; location.reload(); }
+  });
+  navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(reg => {
+    const check = () => reg.update().catch(() => {});
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) check(); });  // повернулись у застосунок
+    setInterval(check, 30 * 60 * 1000);
+  }).catch(() => {});
+}
+// прибираємо ?r=… з адреси після примусового оновлення
+if (location.search.includes('r=')) history.replaceState(null, '', location.pathname + location.hash);
 })();
