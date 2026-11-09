@@ -1,8 +1,11 @@
 (() => {
 'use strict';
-const DECKS = window.DECKS || [];
+const SECTIONS = window.SECTIONS || [];          // модулі → колоди → картки
+const DECKS = [];
+SECTIONS.forEach(sec => sec.decks.forEach(d => { d.section = sec; DECKS.push(d); }));
 const CARDS = {};                       // id → {id, q, a, deck}
 DECKS.forEach(d => d.cards.forEach(c => { CARDS[c.id] = Object.assign({ deck: d }, c); }));
+const secIds = sec => sec.decks.flatMap(d => d.cards.map(c => c.id));
 
 /* ---------- прогрес (зберігається в браузері) ---------- */
 const KEY = 'annamath-cards-v1';
@@ -72,10 +75,11 @@ function home() {
     </div>
 
     <div class="h2">Теми</div>
-    ${DECKS.map(dk => {
-      const l = ids(dk), ok = count(l, 'ok');
-      return `<button class="deck" data-deck="${dk.id}"><div class="t"><b>${esc(dk.title)}</b><span class="go">→</span></div>
-        <small>${esc(dk.sub)}${dk.sub ? ' · ' : ''}вивчено ${ok} з ${l.length}</small>${progBar(l)}</button>`;
+    ${SECTIONS.map(sec => {
+      const l = secIds(sec), ok = count(l, 'ok');
+      const info = sec.decks.length > 1 ? plural(sec.decks.length, 'колода', 'колоди', 'колод') + ' · ' : '';
+      return `<button class="deck" data-sec="${sec.id}"><div class="t"><b>${esc(sec.title)}</b><span class="go">→</span></div>
+        <small>${esc(sec.sub)}${sec.sub ? ' · ' : ''}${info}вивчено ${ok} з ${l.length}</small>${progBar(l)}</button>`;
     }).join('')}
     ${legend}
 
@@ -85,7 +89,10 @@ function home() {
       <span class="sp"></span>
       <a href="https://www.instagram.com/its.annamath/" target="_blank" rel="noopener">@its.annamath</a>
     </div>`);
-  app.querySelectorAll('[data-deck]').forEach(b => b.onclick = () => { location.hash = 'deck-' + b.dataset.deck; });
+  app.querySelectorAll('[data-sec]').forEach(b => b.onclick = () => {
+    const sec = SECTIONS.find(x => x.id === b.dataset.sec);
+    location.hash = sec.decks.length === 1 ? 'deck-' + sec.decks[0].id : 'sec-' + sec.id;   // одна колода — одразу в неї
+  });
   app.querySelectorAll('[data-act]').forEach(b => b.onclick = () => {
     const a = b.dataset.act;
     if (a === 'due') study(shuffle(due(ids())), 'Повторення', '');
@@ -97,7 +104,36 @@ function home() {
   });
 }
 
-/* ---------- сторінка теми ---------- */
+/* ---------- сторінка модуля ---------- */
+function sectionPage(sec) {
+  const l = secIds(sec), d = due(l), w = weak(l), fresh = l.filter(id => status(id) === 'new');
+  const back = '#sec-' + sec.id;
+  setView(`
+    <div class="top"><button class="back" data-act="home" aria-label="Назад">←</button><h2>${esc(sec.title)}</h2></div>
+    <div class="stats">
+      <div class="stat"><b>${count(l, 'ok')}</b><small>вивчено</small></div>
+      <div class="stat"><b>${count(l, 'mid')}</b><small>вчу</small></div>
+      <div class="stat"><b>${count(l, 'bad')}</b><small>не знаю</small></div>
+      <div class="stat"><b>${fresh.length}</b><small>нові</small></div>
+    </div>
+    <button class="btn main" data-act="all">Увесь модуль разом · ${l.length}</button>
+    <button class="btn line" data-act="weak" ${w.length ? '' : 'disabled'}>Повторити, що не знаю${w.length ? ' · ' + w.length : ''}</button>
+    ${d.length ? `<button class="btn line" data-act="due">Повторити сьогодні · ${d.length}</button>` : ''}
+    <div class="h2">Колоди</div>
+    ${sec.decks.map(dk => {
+      const dl = ids(dk), ok = count(dl, 'ok');
+      return `<button class="deck" data-deck="${dk.id}"><div class="t"><b>${esc(dk.title)}</b><span class="go">→</span></div>
+        <small>${esc(dk.sub)}${dk.sub ? ' · ' : ''}вивчено ${ok} з ${dl.length}</small>${progBar(dl)}</button>`;
+    }).join('')}
+    ${legend}`);
+  $('[data-act=home]').onclick = () => { location.hash = ''; };
+  $('[data-act=all]').onclick = () => study(shuffle(l.slice()), sec.title, back);
+  if (w.length) $('[data-act=weak]').onclick = () => study(shuffle(w), sec.title + ' · не знаю', back);
+  if (d.length) $('[data-act=due]').onclick = () => study(shuffle(d), sec.title + ' · повторення', back);
+  app.querySelectorAll('[data-deck]').forEach(b => b.onclick = () => { location.hash = 'deck-' + b.dataset.deck; });
+}
+
+/* ---------- сторінка колоди ---------- */
 function deckPage(dk) {
   const l = ids(dk), d = due(l), w = weak(l), fresh = l.filter(id => status(id) === 'new');
   const learnSet = d.concat(fresh.slice(0, 15));
@@ -121,7 +157,7 @@ function deckPage(dk) {
       return `<div class="li"><span class="dot" style="background:${col};${st === 'new' ? 'border:1px solid var(--pink)' : ''}"></span>${c.q}</div>`;
     }).join('')}</div>
     ${legend}`);
-  $('[data-act=home]').onclick = () => { location.hash = ''; };
+  $('[data-act=home]').onclick = () => { location.hash = dk.section.decks.length > 1 ? 'sec-' + dk.section.id : ''; };
   const b = $('[data-act=learn]'); if (learnSet.length) b.onclick = () => study(shuffle(d).concat(shuffle(fresh.slice(0, 15))), dk.title, back);
   if (w.length) $('[data-act=weak]').onclick = () => study(shuffle(w), dk.title + ' · не знаю', back);
   $('[data-act=all]').onclick = () => study(shuffle(l.slice()), dk.title, back);
@@ -150,6 +186,7 @@ function study(list, title, backHash) {
     const put = () => {
       $('#q').innerHTML = cur.q; $('#a').innerHTML = cur.a;
       $('#dk1').textContent = $('#dk2').textContent = cur.deck.title;
+      fit();
     };
     if (flipped) {                      // перевертаємо назад без «підглядання» нової відповіді
       card.classList.add('noanim'); card.classList.remove('flip'); void card.offsetWidth; card.classList.remove('noanim');
@@ -158,6 +195,13 @@ function study(list, title, backHash) {
     $('#no').disabled = $('#yes').disabled = true;
     $('#cnt').textContent = cleared + ' / ' + total;
     $('#bar').style.width = (cleared / total * 100) + '%';
+  }
+  function fit() {                     // довга формула — зменшуємо шрифт, щоб влізла в картку
+    app.querySelectorAll('.face .katex-display').forEach(box => {
+      const k = box.querySelector('.katex'); let size = 1.6;
+      k.style.fontSize = size + 'em';
+      while (box.scrollWidth > box.clientWidth + 3 && size > 0.9) { size -= 0.1; k.style.fontSize = size.toFixed(1) + 'em'; }
+    });
   }
   function flip() {
     flipped = !flipped; card.classList.toggle('flip', flipped);
@@ -192,6 +236,7 @@ function study(list, title, backHash) {
     if (wrong.size) $('[data-act=again]').onclick = () => study(shuffle([...wrong]), title, backHash);
   }
   card.onclick = flip;
+  window.onresize = () => { if (document.getElementById('card')) fit(); };
   $('#no').onclick = () => answer(false);
   $('#yes').onclick = () => answer(true);
   show();
@@ -293,7 +338,8 @@ function route() {
   closeModal();
   const h = location.hash.slice(1);
   const dk = h.startsWith('deck-') && DECKS.find(d => d.id === h.slice(5));
-  if (dk) deckPage(dk); else home();
+  const sec = h.startsWith('sec-') && SECTIONS.find(x => x.id === h.slice(4));
+  if (dk) deckPage(dk); else if (sec) sectionPage(sec); else home();
 }
 window.addEventListener('hashchange', route);
 route();

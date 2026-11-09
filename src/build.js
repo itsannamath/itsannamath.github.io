@@ -13,18 +13,21 @@ const decks = require('./decks.js');
 const tex = s => katex.renderToString(s, { displayMode: true, throwOnError: true });
 const id = (deck, q) => deck + '-' + crypto.createHash('md5').update(q).digest('hex').slice(0, 6);
 
-const data = decks.map(d => {
-  const seen = new Set();
-  return {
+const allIds = new Set();
+const data = decks.map(sec => ({ ...sec, decks: sec.decks.filter(d => !d.draft || process.env.DRAFTS) }))
+  .filter(sec => sec.decks.length)
+  .map(sec => ({
+  id: sec.id, title: sec.title, sub: sec.sub || '',
+  decks: sec.decks.map(d => ({
     id: d.id, title: d.title, sub: d.sub || '',
     cards: d.cards.map(([q, a]) => {
       const cid = id(d.id, q);
-      if (seen.has(cid)) throw new Error('Дубль картки в колоді ' + d.id + ': ' + q);
-      seen.add(cid);
+      if (allIds.has(cid)) throw new Error('Дубль картки в колоді ' + d.id + ': ' + q);
+      allIds.add(cid);
       return { id: cid, q: tex(q), a: tex(a) };
     }),
-  };
-});
+  })),
+}));
 
 fs.rmSync(path.join(OUT, 'katex'), { recursive: true, force: true });
 fs.mkdirSync(path.join(OUT, 'katex', 'fonts'), { recursive: true });
@@ -41,7 +44,7 @@ fonts.forEach(f => fs.copyFileSync(path.join(KATEX, 'fonts', f), path.join(OUT, 
 for (const f of fs.readdirSync(path.join(ROOT, 'static'))) {
   fs.copyFileSync(path.join(ROOT, 'static', f), path.join(OUT, f));
 }
-fs.writeFileSync(path.join(OUT, 'data.js'), 'window.DECKS=' + JSON.stringify(data) + ';\n');
+fs.writeFileSync(path.join(OUT, 'data.js'), 'window.SECTIONS=' + JSON.stringify(data) + ';\n');
 fs.writeFileSync(path.join(OUT, '.nojekyll'), '');
 
 // service worker: список файлів для офлайну + версія, щоб оновлення доходили
@@ -57,5 +60,6 @@ fs.writeFileSync(path.join(OUT, 'sw.js'), sw);
 const html = path.join(OUT, 'index.html');
 fs.writeFileSync(html, fs.readFileSync(html, 'utf8').replace(/(href|src)="(style\.css|app\.js|data\.js|katex\/katex\.min\.css)"/g, `$1="$2?v=${ver}"`));
 
-const n = data.reduce((s, d) => s + d.cards.length, 0);
-console.log(`ok: ${data.length} колод, ${n} карток, версія ${ver}`);
+const nd = data.reduce((s, x) => s + x.decks.length, 0);
+const n = allIds.size;
+console.log(`ok: ${data.length} модулів, ${nd} колод, ${n} карток, версія ${ver}`);
