@@ -80,7 +80,7 @@ h1{ font-size:32px; font-weight:800; text-transform:uppercase; margin:6px 0 4px;
 .btn.line{ background:#fff; color:var(--accent); border:2px solid var(--accent); }
 .btn:disabled{ opacity:.4; cursor:default; }
 .list{ margin-top:22px; }
-.li{ display:flex; align-items:center; gap:12px; background:#fff; border-bottom:1px solid var(--line); padding:6px 4px; overflow-x:auto; }
+.li{ display:flex; align-items:center; gap:12px; background:#fff; border-bottom:1px solid var(--line); padding:10px 4px; overflow-x:auto; overflow-y:visible; }
 .li .dot{ width:10px; height:10px; border-radius:50%; flex:none; }
 .li .katex-display{ margin:0; text-align:left; }
 .li .katex-display>.katex{ text-align:left; }
@@ -100,7 +100,7 @@ h1{ font-size:32px; font-weight:800; text-transform:uppercase; margin:6px 0 4px;
 .lbl{ position:absolute; top:16px; left:20px; right:20px; display:flex; justify-content:space-between;
   font-size:11px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--accent); }
 .backf .lbl{ color:#fff; }
-.face .katex-display{ margin:0; width:100%; max-width:100%; overflow-x:auto; overflow-y:hidden; }
+.face .katex-display{ margin:0; width:100%; max-width:100%; overflow:visible; padding:.25em 0; }
 .face .katex{ font-size:1.6em; }
 #q,#a{ width:100%; }
 .hint{ position:absolute; bottom:14px; font-size:12px; color:var(--muted); }
