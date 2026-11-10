@@ -27,6 +27,49 @@ function grade(id, knew) {
   P[id] = { b, d: t + INT[b], s: (r ? r.s : 0) + 1 };
   save();
 }
+/* ---------- серія днів ---------- */
+const GOAL = 10;                         // ціль на день — карток
+const KEY_S = 'annamath-streak-v1';
+let S = { d: {}, best: 0 };
+try { S = Object.assign({ d: {}, best: 0 }, JSON.parse(localStorage.getItem(KEY_S)) || {}); } catch (e) {}
+const saveS = () => { try { localStorage.setItem(KEY_S, JSON.stringify(S)); } catch (e) {} };
+const doneDay = x => (S.d[x] || 0) >= GOAL;
+function streak() {                       // днів поспіль з виконаною ціллю (сьогодні ще можна встигнути)
+  let x = doneDay(today()) ? today() : today() - 1, n = 0;
+  while (doneDay(x)) { n++; x--; }
+  return n;
+}
+function addAnswer() {                    // повертає true, якщо щойно виконано ціль на сьогодні
+  const t = today(), before = S.d[t] || 0;
+  S.d[t] = before + 1;
+  for (const k in S.d) if (+k < t - 120) delete S.d[k];
+  S.best = Math.max(S.best || 0, streak());
+  saveS();
+  return before < GOAL && S.d[t] >= GOAL;
+}
+const daysW = n => plural(n, 'день', 'дні', 'днів');
+function streakBlock() {
+  const t = today(), c = S.d[t] || 0, n = streak(), WD = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд'];
+  const week = [6, 5, 4, 3, 2, 1, 0].map(i => {
+    const x = t - i, v = S.d[x] || 0, cls = v >= GOAL ? 'on' : v > 0 ? 'half' : '';
+    return `<div class="wd ${cls}${i === 0 ? ' now' : ''}"><i>${v >= GOAL ? '✓' : ''}</i><small>${WD[(x + 3) % 7]}</small></div>`;
+  }).join('');
+  const left = Math.max(GOAL - c, 0);
+  const goalTxt = left === 0 ? '<b>✓ Ціль на сьогодні виконано</b>'
+    : n > 0 && !doneDay(t) ? `Ще ${cardsW(left)} — і серія продовжиться` : `Сьогодні: ${c} / ${GOAL} карток`;
+  return `<div class="streak">
+    <div class="st-top"><span class="fire${n ? '' : ' off'}">🔥</span>
+      <div class="st-n"><b>${n ? daysW(n) + ' поспіль' : 'Почни серію'}</b><small>${n ? 'рекорд: ' + daysW(Math.max(S.best || 0, n)) : GOAL + ' карток на день — і вогник загориться'}</small></div></div>
+    <div class="st-bar"><i style="width:${Math.min(c / GOAL, 1) * 100}%"></i></div>
+    <div class="st-goal">${goalTxt}</div>
+    <div class="week">${week}</div>
+  </div>`;
+}
+function flash(text) {
+  const t = document.createElement('div'); t.className = 'flash'; t.textContent = text;
+  document.body.appendChild(t); setTimeout(() => t.classList.add('out'), 1800); setTimeout(() => t.remove(), 2300);
+}
+
 const ids = deck => (deck ? deck.cards : Object.values(CARDS)).map(c => c.id);
 const count = (list, st) => list.filter(id => status(id) === st).length;
 const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
@@ -66,6 +109,8 @@ function home() {
       <button class="inst-go" data-act="install">Як?</button>
       <button class="inst-x" data-act="hideInstall" aria-label="Сховати">×</button>
     </div>` : ''}
+
+    ${streakBlock()}
 
     ${d.length
       ? `<button class="today" data-act="due"><div class="n">${d.length}</div><b>Повторити сьогодні</b><small>${cardsW(d.length)} чекають на повторення</small></button>`
@@ -172,7 +217,7 @@ function deckPage(dk) {
 function study(list, title, backHash) {
   if (!list.length) return;
   const total = list.length, queue = list.slice(), answered = new Set(), wrong = new Set();
-  let cleared = 0, flipped = false, cur = null;
+  let cleared = 0, flipped = false, cur = null, goalHit = false;
   setView(`
     <div class="top"><button class="back" data-act="back" aria-label="Назад">←</button><h2>${esc(title)}</h2><span class="cnt" id="cnt"></span></div>
     <div class="bar"><i id="bar"></i></div>
@@ -216,6 +261,7 @@ function study(list, title, backHash) {
     if ($('#yes').disabled) return;
     const id = queue.shift();
     if (!answered.has(id)) { answered.add(id); grade(id, knew); }   // у прогрес іде лише перша відповідь
+    if (addAnswer()) { goalHit = true; flash('🔥 Ціль на сьогодні виконано! Серія: ' + daysW(streak())); }
     if (knew) cleared++;
     else { wrong.add(id); queue.splice(Math.min(2, queue.length), 0, id); }  // повернеться через 2 картки
     show();
@@ -234,6 +280,7 @@ function study(list, title, backHash) {
       <div class="done">
         <div class="big">${first} / ${total}</div>
         <p>${first === total ? 'Усе з першого разу! 🔥' : 'з першого разу.<br>Картки з помилками система покаже тобі ще й завтра.'}</p>
+        ${goalHit ? `<div class="goalhit">🔥 Ціль на сьогодні виконано!<br><b>${daysW(streak())} поспіль</b></div>` : ''}
         ${wrong.size ? `<button class="btn main" data-act="again">Ще раз — тільки помилки · ${wrong.size}</button>` : ''}
         <button class="btn ${wrong.size ? 'line' : 'main'}" data-act="back2">Готово</button>
       </div>`);
@@ -258,7 +305,7 @@ function closeModal() { modal.classList.add('hidden'); }
 modal.onclick = e => { if (e.target === modal) closeModal(); };
 
 function transfer() {
-  const code = 'AM1:' + btoa(unescape(encodeURIComponent(JSON.stringify(P))));
+  const code = 'AM1:' + btoa(unescape(encodeURIComponent(JSON.stringify(Object.assign({}, P, { _s: S })))));
   openModal(`
     <h3>Перенести прогрес</h3>
     <p>Прогрес зберігається на цьому пристрої. Щоб продовжити на іншому — скопіюй код тут і встав його там у поле нижче.</p>
@@ -283,6 +330,10 @@ function transfer() {
       if (!v.startsWith('AM1:')) throw 0;
       const inc = JSON.parse(decodeURIComponent(escape(atob(v.slice(4)))));
       let n = 0;
+      if (inc._s && inc._s.d) {         // серія днів: беремо більше значення за кожен день
+        for (const k in inc._s.d) S.d[k] = Math.max(S.d[k] || 0, +inc._s.d[k] || 0);
+        S.best = Math.max(S.best || 0, +inc._s.best || 0, streak()); saveS();
+      }
       for (const k in inc) {            // беремо той запис, де картку повторювали більше разів
         const r = inc[k];
         if (!r || typeof r.b !== 'number' || typeof r.d !== 'number') continue;
@@ -295,7 +346,7 @@ function transfer() {
   let sure = false;
   sheet.querySelector('#reset').onclick = e => {
     if (!sure) { sure = true; e.target.textContent = 'Точно? Натисни ще раз'; e.target.style.color = 'var(--accent)'; return; }
-    P = {}; save(); closeModal(); route();
+    P = {}; save(); S = { d: {}, best: 0 }; saveS(); closeModal(); route();
   };
   sheet.querySelector('#close').onclick = closeModal;
 }

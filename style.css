@@ -36,6 +36,28 @@ h1{ font-size:32px; font-weight:800; text-transform:uppercase; margin:6px 0 4px;
 .inst-x{ color:var(--muted); font-size:22px; line-height:1; padding:4px 4px; flex:none; }
 .sheet ol li{ margin-bottom:6px; }
 
+/* серія днів */
+.streak{ background:#fff; border:2px solid var(--pink); border-radius:20px; padding:16px 16px 12px; margin-bottom:12px; }
+.st-top{ display:flex; align-items:center; gap:12px; }
+.fire{ font-size:34px; line-height:1; }
+.fire.off{ filter:grayscale(1); opacity:.45; }
+.st-n b{ display:block; font-size:18px; font-weight:800; }
+.st-n small{ font-size:12px; color:var(--muted); }
+.st-bar{ height:8px; background:var(--soft); border-radius:8px; overflow:hidden; margin:12px 0 6px; }
+.st-bar i{ display:block; height:100%; background:var(--accent); border-radius:8px; }
+.st-goal{ font-size:13px; color:var(--muted); font-weight:600; }
+.st-goal b{ color:var(--accent); }
+.week{ display:grid; grid-template-columns:repeat(7,1fr); gap:4px; margin-top:12px; text-align:center; }
+.wd i{ display:grid; place-items:center; width:28px; height:28px; margin:0 auto 3px; border-radius:50%; background:var(--soft); color:#fff; font-style:normal; font-size:13px; font-weight:800; }
+.wd.half i{ background:#F7C3D7; }
+.wd.on i{ background:var(--accent); }
+.wd.now i{ box-shadow:0 0 0 2px #fff, 0 0 0 4px var(--pink); }
+.wd small{ font-size:11px; color:var(--muted); font-weight:600; }
+.flash{ position:fixed; left:50%; top:calc(18px + env(safe-area-inset-top)); transform:translateX(-50%); z-index:30; background:var(--accent); color:#fff;
+  font-size:14px; font-weight:700; padding:12px 18px; border-radius:14px; box-shadow:0 8px 22px rgba(226,69,126,.35); white-space:nowrap; transition:opacity .4s; }
+.flash.out{ opacity:0; }
+.goalhit{ background:var(--soft); border-radius:16px; padding:14px; margin:-8px 0 20px; color:var(--accent); font-size:15px; font-weight:700; line-height:1.5; }
+
 /* головні кнопки */
 .today{ display:block; width:100%; text-align:left; background:var(--accent); color:#fff; border-radius:20px;
   padding:20px 22px; box-shadow:0 10px 26px rgba(226,69,126,.28); }
