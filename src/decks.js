@@ -3,6 +3,7 @@
 // УВАГА: id картки = хеш тексту питання. Змінити текст питання = скинути прогрес учнів по цій картці.
 const Q = '\\ ?';                       // знак питання в картці
 const c = s => '\\quad\\small(' + s + ')';   // умова дрібним шрифтом
+const tg = '\\operatorname{tg}', ctg = '\\operatorname{ctg}';
 const T = s => '\\text{' + s + '}';   // звичайний текст у картці
 const lines = (...xs) => '\\begin{gathered}' + xs.join('\\\\[2pt]') + '\\end{gathered}';   // кілька рядків
 const note = (f, t) => '\\begin{gathered}' + f + '\\\\[2pt] \\small\\text{' + t + '}\\end{gathered}';   // пояснення під формулою
@@ -110,6 +111,35 @@ module.exports = [
           ['a^{\\log_a b}=' + Q, 'b'],
           ['\\log_a b=' + Q + c('\\text{через } \\log_b a'), '\\dfrac{1}{\\log_b a}'],
           ['\\log_a b=' + Q + c('\\text{перехід до основи } c'), '\\dfrac{\\log_c b}{\\log_c a}'],
+        ],
+      },
+    ],
+  },
+  {
+    id: 'mod6', title: 'Модуль 6 · Тригонометрія', sub: 'тригонометричні вирази',
+    decks: [
+      {
+        id: 'tryg-vyrazy', title: 'Тригонометричні вирази', sub: 'тотожності, формули суми й різниці, подвійного аргументу',
+        cards: [
+          ['\\sin^2\\alpha+\\cos^2\\alpha=' + Q, '1'],
+          ['\\sin^2\\alpha=' + Q + c('\\text{через } \\cos'), '1-\\cos^2\\alpha'],
+          ['\\cos^2\\alpha=' + Q + c('\\text{через } \\sin'), '1-\\sin^2\\alpha'],
+          [tg + '\\alpha=' + Q + c('\\text{через } \\sin \\text{ і } \\cos'), '\\dfrac{\\sin\\alpha}{\\cos\\alpha}'],
+          [ctg + '\\alpha=' + Q + c('\\text{через } \\sin \\text{ і } \\cos'), '\\dfrac{\\cos\\alpha}{\\sin\\alpha}'],
+          [tg + '\\alpha\\cdot' + ctg + '\\alpha=' + Q, '1'],
+          [ctg + '\\alpha=' + Q + c('\\text{через } ' + tg), '\\dfrac{1}{' + tg + '\\alpha}'],
+          [tg + '\\alpha=' + Q + c('\\text{через } ' + ctg), '\\dfrac{1}{' + ctg + '\\alpha}'],
+          ['1+' + tg + '^2\\alpha=' + Q, '\\dfrac{1}{\\cos^2\\alpha}'],
+          ['1+' + ctg + '^2\\alpha=' + Q, '\\dfrac{1}{\\sin^2\\alpha}'],
+          ['\\cos(\\alpha-\\beta)=' + Q, '\\cos\\alpha\\cos\\beta+\\sin\\alpha\\sin\\beta'],
+          ['\\cos(\\alpha+\\beta)=' + Q, '\\cos\\alpha\\cos\\beta-\\sin\\alpha\\sin\\beta'],
+          ['\\sin(\\alpha-\\beta)=' + Q, '\\sin\\alpha\\cos\\beta-\\sin\\beta\\cos\\alpha'],
+          ['\\sin(\\alpha+\\beta)=' + Q, '\\sin\\alpha\\cos\\beta+\\sin\\beta\\cos\\alpha'],
+          [tg + '(\\alpha+\\beta)=' + Q, '\\dfrac{' + tg + '\\alpha+' + tg + '\\beta}{1-' + tg + '\\alpha\\cdot' + tg + '\\beta}'],
+          [tg + '(\\alpha-\\beta)=' + Q, '\\dfrac{' + tg + '\\alpha-' + tg + '\\beta}{1+' + tg + '\\alpha\\cdot' + tg + '\\beta}'],
+          ['\\sin2\\alpha=' + Q, '2\\sin\\alpha\\cos\\alpha'],
+          ['\\cos2\\alpha=' + Q, '\\cos^2\\alpha-\\sin^2\\alpha'],
+          [tg + '2\\alpha=' + Q, '\\dfrac{2' + tg + '\\alpha}{1-' + tg + '^2\\alpha}'],
         ],
       },
     ],
