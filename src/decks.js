@@ -116,7 +116,7 @@ module.exports = [
     ],
   },
   {
-    id: 'mod6', title: 'Модуль 6 · Тригонометрія', sub: 'тригонометричні вирази',
+    id: 'mod6', title: 'Модуль 6 · Тригонометрія', sub: 'вирази, рівняння',
     decks: [
       {
         id: 'tryg-vyrazy', title: 'Тригонометричні вирази', sub: 'тотожності, формули суми й різниці, подвійного аргументу',
@@ -140,6 +140,23 @@ module.exports = [
           ['\\sin2\\alpha=' + Q, '2\\sin\\alpha\\cos\\alpha'],
           ['\\cos2\\alpha=' + Q, '\\cos^2\\alpha-\\sin^2\\alpha'],
           [tg + '2\\alpha=' + Q, '\\dfrac{2' + tg + '\\alpha}{1-' + tg + '^2\\alpha}'],
+        ],
+      },
+      {
+        id: 'tryg-rivn', title: 'Тригонометричні рівняння', sub: 'sin, cos, tg, ctg x = a та окремі випадки',
+        cards: [
+          [lines(T('Коли рівняння ') + '\\sin x=a', T('і ') + '\\cos x=a' + T(' мають корені?')), 'a\\in[-1;\\,1]'],
+          [lines(T('Коли рівняння ') + tg + ' x=a', T('і ') + ctg + ' x=a' + T(' мають корені?')), T('за будь-якого ') + 'a\\in\\mathbb R'],
+          ['\\sin x=a,\\quad x=' + Q, '(-1)^n\\arcsin a+\\pi n,\\ n\\in\\mathbb Z'],
+          ['\\sin x=-1,\\quad x=' + Q, '-\\dfrac{\\pi}{2}+2\\pi n,\\ n\\in\\mathbb Z'],
+          ['\\sin x=0,\\quad x=' + Q, '\\pi n,\\ n\\in\\mathbb Z'],
+          ['\\sin x=1,\\quad x=' + Q, '\\dfrac{\\pi}{2}+2\\pi n,\\ n\\in\\mathbb Z'],
+          ['\\cos x=a,\\quad x=' + Q, '\\pm\\arccos a+2\\pi n,\\ n\\in\\mathbb Z'],
+          ['\\cos x=-1,\\quad x=' + Q, '\\pi+2\\pi n,\\ n\\in\\mathbb Z'],
+          ['\\cos x=0,\\quad x=' + Q, '\\dfrac{\\pi}{2}+\\pi n,\\ n\\in\\mathbb Z'],
+          ['\\cos x=1,\\quad x=' + Q, '2\\pi n,\\ n\\in\\mathbb Z'],
+          [tg + ' x=a,\\quad x=' + Q, '\\operatorname{arctg} a+\\pi n,\\ n\\in\\mathbb Z'],
+          [ctg + ' x=a,\\quad x=' + Q, '\\operatorname{arcctg} a+\\pi n,\\ n\\in\\mathbb Z'],
         ],
       },
     ],
