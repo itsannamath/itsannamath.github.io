@@ -116,8 +116,33 @@ module.exports = [
     ],
   },
   {
-    id: 'mod6', title: 'Модуль 6 · Тригонометрія', sub: 'вирази, рівняння',
+    id: 'mod6', title: 'Модуль 6 · Тригонометрія', sub: 'таблиця значень, вирази, рівняння',
     decks: [
+      {
+        id: 'tryg-tabl', title: 'Таблиця значень', sub: 'sin, cos, tg, ctg для 0°, 30°, 45°, 60°, 90°',
+        cards: [
+          ['\\sin0^\\circ=' + Q, '0'],
+          ['\\sin30^\\circ=' + Q, '\\dfrac12'],
+          ['\\sin45^\\circ=' + Q, '\\dfrac{\\sqrt2}{2}'],
+          ['\\sin60^\\circ=' + Q, '\\dfrac{\\sqrt3}{2}'],
+          ['\\sin90^\\circ=' + Q, '1'],
+          ['\\cos0^\\circ=' + Q, '1'],
+          ['\\cos30^\\circ=' + Q, '\\dfrac{\\sqrt3}{2}'],
+          ['\\cos45^\\circ=' + Q, '\\dfrac{\\sqrt2}{2}'],
+          ['\\cos60^\\circ=' + Q, '\\dfrac12'],
+          ['\\cos90^\\circ=' + Q, '0'],
+          [tg + '0^\\circ=' + Q, '0'],
+          [tg + '30^\\circ=' + Q, '\\dfrac{\\sqrt3}{3}'],
+          [tg + '45^\\circ=' + Q, '1'],
+          [tg + '60^\\circ=' + Q, '\\sqrt3'],
+          [tg + '90^\\circ=' + Q, T('не існує')],
+          [ctg + '0^\\circ=' + Q, T('не існує')],
+          [ctg + '30^\\circ=' + Q, '\\sqrt3'],
+          [ctg + '45^\\circ=' + Q, '1'],
+          [ctg + '60^\\circ=' + Q, '\\dfrac{\\sqrt3}{3}'],
+          [ctg + '90^\\circ=' + Q, '0'],
+        ],
+      },
       {
         id: 'tryg-vyrazy', title: 'Тригонометричні вирази', sub: 'тотожності, формули суми й різниці, подвійного аргументу',
         cards: [
